@@ -8,7 +8,7 @@ change, so the publishers' pages are linked below.
 | Translation | How to get it free in bible-rs | Key, limits and terms |
 |---|---|---|
 | KJV, WEB, BSB, ASV, YLT, Darby, Webster | Built in | Public domain. |
-| **NLT** (Tyndale) | Settings → Translations → **Add NLT** | No key needed: 50 verses a request, 500 requests a day. An optional free key from [api.nlt.to](https://api.nlt.to/) raises that to 500 verses and 5,000 requests. Non-commercial use only, and consistent with [Tyndale's purpose](https://www.tyndale.com/purpose). At most 500 verses are kept on disk, and never a whole book. Tyndale's credit line appears under each chapter. |
+| **NLT** (Tyndale) | Settings → Translations → **Add NLT** | No key needed. Release builds include bible-rs's own key: 500 verses a request, and 500 requests a day on each Mac, since every copy shares it. Built from source without one: 50 verses a request, 500 requests a day. An optional free key of your own from [api.nlt.to](https://api.nlt.to/) raises that to 500 verses and 5,000 requests. Non-commercial use only, and consistent with [Tyndale's purpose](https://www.tyndale.com/purpose). At most 500 verses are kept on disk, and never a whole book. Tyndale's credit line appears under each chapter. |
 | **NET Bible** (bible.org) | Settings → Translations → **Add NET** | No key needed ([labs.bible.org](https://labs.bible.org/api/)). Non-commercial use may quote the text in any form. "(NET)" and the acknowledgment appear under each chapter, linked to netbible.org. Requests are spaced 1 s apart, and chapters are kept for 30 days. |
 | **ESV** (Crossway) | Settings → Translations → **Get Free Key…** opens [api.esv.org](https://api.esv.org/account/create-application/). Create an "API application" there, paste the key, then **Add ESV** | Non-commercial use only. 5,000 requests a day, 1,000 an hour, 60 a minute. At most 500 verses are stored, and never more than half a book. The notice under each chapter links to esv.org. |
 | NASB 2020, NASB 1995, AMP (Lockman) | Your own [API.Bible](https://api.bible/) key → **List My Bibles…** → **Add** | Lockman has no API of its own. These Bibles are on API.Bible under its "Standard License". See the note on API.Bible below. |
@@ -35,6 +35,10 @@ Starter plan requires.
 the repository never holds copyrighted text. So the NET is fetched instead, and eBible.org's NET
 download is there for personal use. bible.org's API documentation is behind a bot check that
 couldn't be read, so this follows the NET Bible copyright page, which the API defers to.
+
+**Why the ESV needs your own key.** Anyone can read a key out of a downloaded app. Tyndale's terms
+don't object, so release builds include an NLT key. Crossway's say "You may not sell, share, or
+publish your access key", so bible-rs ships without an ESV key and each reader makes their own.
 
 Sources: [NLT API](https://api.nlt.to/) and [Tyndale permissions](https://www.tyndale.com/permissions),
 [ESV API terms](https://api.esv.org/), [NET Bible copyright](https://netbible.com/copyright),

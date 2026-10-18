@@ -32,10 +32,16 @@ pub const DEFAULT_BASE: &str = "https://api.nlt.to";
 pub const ANONYMOUS_LIMITS: (u32, u32) = (50, 500);
 pub const KEY_LIMITS: (u32, u32) = (500, 5_000);
 
+/// The key official builds are compiled with (`BIBLE_RS_NLT_KEY`, see RELEASING.md), used when the
+/// reader hasn't saved their own. It is never written to the repository.
+const BUILTIN_KEY: Option<&str> = option_env!("BIBLE_RS_NLT_KEY");
+
 pub struct Nlt {
     base: String,
     agent: ureq::Agent,
     budget: DailyBudget,
+    /// Used when the reader has no key of their own.
+    builtin_key: Option<String>,
     /// Every request, including each range of a long chapter, waits this long after the last.
     interval: Duration,
     last_request: Mutex<Option<Instant>>,
@@ -44,7 +50,7 @@ pub struct Nlt {
 impl Nlt {
     /// `budget_path` keeps today's request count across sessions.
     pub fn new(budget_path: Option<PathBuf>) -> Self {
-        Self::with_base(DEFAULT_BASE, budget_path)
+        Self::with_base(DEFAULT_BASE, budget_path).with_builtin_key(BUILTIN_KEY)
     }
 
     pub fn with_base(base: &str, budget_path: Option<PathBuf>) -> Self {
@@ -52,9 +58,16 @@ impl Nlt {
             base: base.trim_end_matches('/').to_string(),
             agent: http_agent(),
             budget: DailyBudget::new(budget_path),
+            builtin_key: None,
             interval: Duration::from_secs(1),
             last_request: Mutex::new(None),
         }
+    }
+
+    /// The key to use when the reader has none (`new` passes the one the build was compiled with).
+    pub fn with_builtin_key(mut self, key: Option<&str>) -> Self {
+        self.builtin_key = key.map(str::trim).filter(|k| !k.is_empty()).map(str::to_string);
+        self
     }
 
     /// Spaces requests differently (tests use zero).
@@ -67,9 +80,9 @@ impl Nlt {
         self.budget.used()
     }
 
-    fn passage(&self, key: &str, reference: &str, per_day: u32) -> Result<String> {
+    fn passage(&self, key: &str, own_key: bool, reference: &str, per_day: u32) -> Result<String> {
         if let Err(e) = self.budget.spend(per_day, "NLT API") {
-            anyhow::ensure!(!key.is_empty(), "{e}. A free API key from api.nlt.to raises it to 5,000");
+            anyhow::ensure!(own_key, "{e}. A free API key from api.nlt.to raises it to 5,000");
             return Err(e);
         }
         {
@@ -103,7 +116,13 @@ impl Source for Nlt {
     }
 
     fn fetch(&self, key: &str, c: ChapterIdx) -> Result<FetchedChapter> {
-        let (per_request, per_day) = if key.is_empty() { ANONYMOUS_LIMITS } else { KEY_LIMITS };
+        // Every copy of a build shares its built-in key's 5,000 requests a day, so that key buys
+        // the larger requests but each install keeps to the anonymous day.
+        let (key, own_key, (per_request, per_day)) = match (key, &self.builtin_key) {
+            ("", Some(builtin)) => (builtin.as_str(), false, (KEY_LIMITS.0, ANONYMOUS_LIMITS.1)),
+            ("", None) => ("", false, ANONYMOUS_LIMITS),
+            (own, _) => (own, true, KEY_LIMITS),
+        };
         let mut b = TranslationBuilder::new(TranslationMeta { id: "nlt".into(), ..Default::default() });
         b.begin_book(c.book());
         b.begin_chapter(c.chapter() as u32);
@@ -116,7 +135,8 @@ impl Source for Nlt {
         // one more is asked for. Ranges past the end are clamped by the API.
         while start <= kjv || (full && start <= kjv + per_request) {
             let end = start + per_request - 1;
-            let html = self.passage(key, &format!("{book}.{}.{start}-{end}", c.chapter()), per_day)?;
+            let html =
+                self.passage(key, own_key, &format!("{book}.{}.{start}-{end}", c.chapter()), per_day)?;
             let got = parse_into(&mut b, &html);
             full = got >= per_request as usize;
             start = end + 1;

@@ -297,6 +297,23 @@ fn nlt_works_without_a_key_in_ranges_the_terms_allow() {
     assert_eq!(query(&reqs[0].path, "key"), Some("K%201"));
     lib.set_api_key("nlt-api-key", "").unwrap();
 
+    // A build's own key: one request per chapter too, until the reader saves a key of theirs.
+    log.lock().unwrap().clear();
+    let (notify, rx) = notifier();
+    let builtin_dir = temp_dir("nlt-builtin");
+    let mut lib = Library::open(&builtin_dir, notify);
+    lib.add_online_with_source(cfg.clone(), Arc::new(nlt().with_builtin_key(Some("B 1"))));
+    assert!(matches!(wait_ready(&lib, "nlt", ps119, &rx), Chapter::Ready(_)));
+    let reqs = log.lock().unwrap().clone();
+    assert_eq!(reqs.len(), 1);
+    assert_eq!(query(&reqs[0].path, "ref"), Some("Ps.119.1-500"));
+    assert_eq!(query(&reqs[0].path, "key"), Some("B%201"));
+    lib.set_api_key("nlt-api-key", "K 1").unwrap();
+    let john3 = ChapterIdx::new(BookId(42), 3).unwrap();
+    assert!(matches!(wait_ready(&lib, "nlt", john3, &rx), Chapter::Ready(_)));
+    assert_eq!(query(&log.lock().unwrap().last().unwrap().path, "key"), Some("K%201"));
+    lib.set_api_key("nlt-api-key", "").unwrap();
+
     // Once the day's requests are used up, no more are made and the reason is shown.
     let today =
         std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() / 86_400;
@@ -305,7 +322,7 @@ fn nlt_works_without_a_key_in_ranges_the_terms_allow() {
     let (notify, rx) = notifier();
     let spent_dir = temp_dir("nlt-spent");
     let mut lib = Library::open(&spent_dir, notify);
-    lib.add_online_with_source(cfg, Arc::new(nlt()));
+    lib.add_online_with_source(cfg.clone(), Arc::new(nlt()));
     let jn3 = ChapterIdx::new(BookId(42), 3).unwrap();
     match wait_ready(&lib, "nlt", jn3, &rx) {
         Chapter::Failed(m) => {
@@ -315,7 +332,21 @@ fn nlt_works_without_a_key_in_ranges_the_terms_allow() {
         _ => panic!("expected the daily limit"),
     }
     assert!(log.lock().unwrap().is_empty());
-    for d in [dir, key_dir, spent_dir] {
+
+    // Every copy of a build shares its key's 5,000, so with it each install still stops at 500.
+    let (notify, rx) = notifier();
+    let shared_dir = temp_dir("nlt-shared");
+    let mut lib = Library::open(&shared_dir, notify);
+    lib.add_online_with_source(cfg, Arc::new(nlt().with_builtin_key(Some("B 1"))));
+    match wait_ready(&lib, "nlt", jn3, &rx) {
+        Chapter::Failed(m) => {
+            assert!(m.starts_with("NLT API: the daily limit of 500"), "{m}");
+            assert!(m.ends_with(". A free API key from api.nlt.to raises it to 5,000"), "{m}");
+        }
+        _ => panic!("expected the daily limit"),
+    }
+    assert!(log.lock().unwrap().is_empty());
+    for d in [dir, key_dir, builtin_dir, spent_dir, shared_dir] {
         let _ = std::fs::remove_dir_all(d);
     }
 }

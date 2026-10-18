@@ -97,7 +97,12 @@ The pluggable provider interface (`Library` → bundled / imported / online entr
    - NLT: 50 verses a request and 500 requests a day anonymously, 500 and 5,000 with a free key.
      Long chapters are fetched as consecutive ranges, every request is spaced ≥ 1 s, and the day's
      count persists across launches so the limit is never passed. Tyndale's permission statement
-     caps quotation at 500 verses and never a complete book; the cache keeps to both.
+     caps quotation at 500 verses and never a complete book; the cache keeps to both. Release
+     builds are compiled with bible-rs's own key (`BIBLE_RS_NLT_KEY`, never in the repository).
+     Every copy shares its 5,000 requests a day, so it lifts the verses per request to 500 but
+     each install keeps to the anonymous 500 requests; a reader's own key gets the full 5,000.
+     The ESV key can't be built in the same way: Crossway's terms forbid publishing it, and any
+     key inside a downloadable app is readable.
    - NET: no storage limit in its terms; requests spaced ≥ 1 s, chapters refreshed after 30 days.
      The NET isn't bundled even though it is free to copy: "free means free" forbids bundling it
      with anything sold, and this repository's licence allows selling builds.

@@ -15,6 +15,7 @@
 #   SIGN_IDENTITY    default "Developer ID Application: Fabrika LLC (5S3KCRYBD2)"
 #   NOTARY_PROFILE   notarytool keychain profile, default bible-notary
 #   NOTARY_KEYCHAIN  keychain holding that profile, default the login keychain
+#   BIBLE_RS_NLT_KEY the NLT API key to build in, default the keychain item RELEASING.md sets up
 #   ALLOW_DIRTY=1    build even though the working tree has uncommitted changes
 #
 # RELEASING.md covers the one-time setup and how to publish. Runs on the bash 3.2 that ships
@@ -95,6 +96,23 @@ if [[ "$ADHOC" == "0" ]]; then
   echo "Signing identity: $SIGN_IDENTITY"
 else
   echo "Signing: ad-hoc (runs only on this Mac; not for distribution)"
+fi
+
+# The NLT key official builds are compiled with: BIBLE_RS_NLT_KEY, or else the login keychain
+# item RELEASING.md sets up. It is never printed or written to the repository.
+if [[ -z "${BIBLE_RS_NLT_KEY:-}" ]]; then
+  BIBLE_RS_NLT_KEY="$(security find-generic-password -s bible-rs-build -a nlt-api-key -w 2>/dev/null || true)"
+fi
+if [[ -n "$BIBLE_RS_NLT_KEY" ]]; then
+  export BIBLE_RS_NLT_KEY
+  echo "NLT key: built in"
+elif [[ "$ADHOC" == "0" ]]; then
+  die "no NLT API key for the build. Save it once in the login keychain (security asks for it):
+       security add-generic-password -s bible-rs-build -a nlt-api-key -w
+       or set BIBLE_RS_NLT_KEY (RELEASING.md)."
+else
+  unset BIBLE_RS_NLT_KEY
+  echo "NLT key: none (the NLT falls back to anonymous access)"
 fi
 
 if [[ "$NOTARIZE" == "1" ]]; then
@@ -203,6 +221,10 @@ check_plist CFBundleIconFile AppIcon
 printf '%-30s %s\n' NSHumanReadableCopyright "$(plist NSHumanReadableCopyright)"
 [[ "$(plist NSHumanReadableCopyright)" == Copyright\ ©\ 2* ]] || die "Info.plist has no copyright line"
 [[ -s "$APP/Contents/Resources/AppIcon.icns" ]] || die "AppIcon.icns is missing"
+if [[ -n "${BIBLE_RS_NLT_KEY:-}" ]]; then
+  grep -qaF -- "$BIBLE_RS_NLT_KEY" "$BIN" || die "the NLT key is not in the binary (a stale build?)"
+  echo "NLT key: compiled in"
+fi
 
 codesign --verify --deep --strict --verbose=2 "$APP"
 codesign --display --verbose=2 "$APP" >"$TMP/codesign.txt" 2>&1

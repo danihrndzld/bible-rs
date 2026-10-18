@@ -41,6 +41,19 @@ The app needs no entitlements; `packaging/macos/entitlements.plist` says why.
    ```
 
    Without the profile, `scripts/release-macos.sh` stops before building and prints these commands.
+4. **NLT API key.** Release builds carry bible-rs's own key from [api.nlt.to](https://api.nlt.to/),
+   so the NLT fetches a whole chapter in one request without the reader setting anything up. The
+   script reads `BIBLE_RS_NLT_KEY`, or else this login keychain item; `security` prompts for the
+   key, so it stays out of shell history:
+
+   ```sh
+   security add-generic-password -s bible-rs-build -a nlt-api-key -w
+   ```
+
+   The key is compiled into the binary and never written to the repository. Signed builds stop
+   before building without it; `--ad-hoc` builds go without, and the NLT uses anonymous access.
+   Anyone can read a key out of a downloaded app, which Tyndale's terms allow. Crossway's don't
+   ("You may not sell, share, or publish your access key"), so the ESV stays bring-your-own.
 
 ## Making a release
 
@@ -102,6 +115,7 @@ while GitHub Actions billing is broken. The workflow needs these repository secr
 | `NOTARY_API_KEY` | The contents of the App Store Connect API key file: `gh secret set NOTARY_API_KEY < AuthKey_<KEYID>.p8` |
 | `NOTARY_API_KEY_ID` | That key's ID |
 | `NOTARY_API_ISSUER` | The issuer ID shown above the list of keys |
+| `NLT_API_KEY` | The NLT API key the app is built with (one-time setup, step 4) |
 
 Delete the exported .p12 once the secret is set. The workflow imports the certificate into a
 temporary keychain and deletes that keychain when it finishes.

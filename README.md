@@ -129,7 +129,7 @@ every major modern translation: how to get it free, or why it has to be bought.
 
 | Service | Translations | Key |
 |---|---|---|
-| **NLT API** (Tyndale) | New Living Translation | None needed. An optional free key from <https://api.nlt.to/> raises the limits |
+| **NLT API** (Tyndale) | New Living Translation | None needed: release builds include one. An optional free key of your own from <https://api.nlt.to/> raises the daily limit |
 | **NET Bible API** (bible.org) | NET Bible | None needed |
 | **ESV API** (Crossway) | English Standard Version | Free for non-commercial use: <https://api.esv.org/> |
 | **API.Bible** (American Bible Society) | Whatever your plan and the publishers allow, e.g. NASB, NKJV, CSB, AMP | <https://api.bible/> |
@@ -144,7 +144,9 @@ every major modern translation: how to get it free, or why it has to be bought.
 What is stored locally follows each API's terms:
 
 - **NLT API.** 50 verses a request and 500 requests a day without a key (500 and 5,000 with
-  one). Longer chapters are fetched in several ranges, requests are spaced at least a second apart,
+  one). Release builds include bible-rs's own key, which gives 500 verses a request; every copy
+  shares it, so each Mac still keeps to 500 requests a day unless you add a key of your own.
+  Longer chapters are fetched in several ranges, requests are spaced at least a second apart,
   and the day's count is kept so the limit is never passed. At most 500 verses are kept on disk,
   and never a complete book.
 - **NET Bible API.** Requests are spaced at least a second apart. The NET's terms set no storage
