@@ -66,7 +66,7 @@ all keyed to the canonical **66-book / 1,189-chapter KJV grid**. Using one grid 
 verse-aligned parallel columns, the compare view, and translation-independent highlights possible.
 
 `.bbl` files store that model as column arrays compressed with zstd (level 19 for bundled data):
-the 4.1 MB KJV is 1.04 MB, all seven bundled translations ≈ 7 MB. The JSON metadata header is
+the 4.1 MB KJV is 1.04 MB, all eight bundled translations ≈ 8 MB. The JSON metadata header is
 uncompressed, so listing translations never decompresses anything. Decoding is a handful of linear
 passes (~18 ms for a whole Bible) and happens on a background thread while the window opens; other
 translations decode lazily (or are warmed after the first frame), so switching is instant.
@@ -76,7 +76,7 @@ URLs and SHA-256 digests are pinned in the repository, using the same USFM impor
 
 ## Translations and licensing
 
-Only public-domain texts are bundled: KJV, WEB, BSB, ASV, YLT, Darby, Webster (provenance and
+Only public-domain texts are bundled: KJV, WEB, BSB, ASV, YLT, Darby, Webster and the Spanish Reina-Valera 1909 (provenance and
 licence notes in `LICENSES/`). Bible in Basic English was left out because its status outside the
 US is unclear. Copyrighted translations — NLT, NASB, LSB, ESV, NIV, … — never appear in the
 repository: no text, no derived index, no test fixtures (tests use public-domain words in the

@@ -19,8 +19,16 @@ macro_rules! bbl {
 }
 
 /// `(id, compressed bytes)`, in the order they are offered to the reader.
-pub static BUNDLED: &[(&str, &[u8])] =
-    &[bbl!("kjv"), bbl!("web"), bbl!("bsb"), bbl!("asv"), bbl!("ylt"), bbl!("dby"), bbl!("wbs")];
+pub static BUNDLED: &[(&str, &[u8])] = &[
+    bbl!("kjv"),
+    bbl!("web"),
+    bbl!("bsb"),
+    bbl!("asv"),
+    bbl!("ylt"),
+    bbl!("dby"),
+    bbl!("wbs"),
+    bbl!("rv1909"),
+];
 
 pub const DEFAULT_ID: &str = "kjv";
 
@@ -34,6 +42,7 @@ pub fn year(id: &str) -> Option<u16> {
         "ylt" => 1898,
         "dby" => 1890,
         "wbs" => 1833,
+        "rv1909" => 1909,
         _ => return None,
     })
 }
@@ -48,6 +57,7 @@ pub fn description(id: &str) -> Option<&'static str> {
         "ylt" => "Very literal · 1898",
         "dby" => "Literal · 1890",
         "wbs" => "Revision of the KJV · 1833",
+        "rv1909" => "Spanish · Reina-Valera · 1909",
         _ => return None,
     })
 }
@@ -83,7 +93,8 @@ mod tests {
                 assert!(t.has_chapter(c), "{id} is missing {}", c.display());
             }
             let first = t.find(VerseRef::new(BookId::GENESIS, 1, 1)).unwrap();
-            assert!(first.text.contains("beginning"), "{id}: {}", first.text);
+            let word = if t.meta.language == "es" { "principio" } else { "beginning" };
+            assert!(first.text.contains(word), "{id}: {}", first.text);
         }
     }
 

@@ -1,5 +1,6 @@
 //! Parsing human-typed references: "jn 3:16", "Rom 8", "1co13:4-7", "ii kings 2", "song 2",
-//! "revalation 21" (typo-tolerant), "jude 3" (single-chapter books take a verse).
+//! "revalation 21" (typo-tolerant), "jude 3" (single-chapter books take a verse), and Spanish
+//! names: "Juan 3:16", "1 Corintios 13", "Génesis 1".
 
 use crate::books::{BOOKS, BookId, ChapterIdx, VerseRef};
 
@@ -91,7 +92,9 @@ struct Parts {
 }
 
 fn split(input: &str) -> Option<Parts> {
-    let s = input.trim().to_lowercase();
+    // Lower-cased with accents folded, so "Génesis" and "Éxodo" match their aliases.
+    let mut s = String::new();
+    input.trim().chars().for_each(|c| crate::search::fold_char(c, &mut s));
     let mut rest = s.as_str();
     let mut ordinal = None;
     // Leading ordinal: "1", "1st", "first", "i", "ii", "iii".
@@ -244,6 +247,24 @@ mod tests {
         assert_eq!(p("deut 6:4"), "Deuteronomy 6:4");
         assert_eq!(p("ecc 3"), "Ecclesiastes 3");
         assert_eq!(p("eph 2:8-9"), "Ephesians 2:8–9");
+    }
+
+    #[test]
+    fn spanish_forms() {
+        assert_eq!(p("Juan 3:16"), "John 3:16");
+        assert_eq!(p("Génesis 1:1"), "Genesis 1:1");
+        assert_eq!(p("Éxodo 20"), "Exodus 20");
+        assert_eq!(p("Salmos 23"), "Psalm 23");
+        assert_eq!(p("sal 119:105"), "Psalm 119:105");
+        assert_eq!(p("1 Corintios 13:4-7"), "1 Corinthians 13:4–7");
+        assert_eq!(p("2 Reyes 2"), "2 Kings 2");
+        assert_eq!(p("1 Juan 4:8"), "1 John 4:8");
+        assert_eq!(p("Hechos 2"), "Acts 2");
+        assert_eq!(p("Santiago 1"), "James 1");
+        assert_eq!(p("Judas 3"), "Jude 1:3");
+        assert_eq!(p("Apocalipsis 21"), "Revelation 21");
+        assert_eq!(p("Isaías 53"), "Isaiah 53");
+        assert_eq!(p("Cantares 2"), "Song of Solomon 2");
     }
 
     #[test]

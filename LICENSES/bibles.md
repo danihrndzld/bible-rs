@@ -1,6 +1,7 @@
 # Source copyright statements
 
-Verbatim text of each eBible.org archive's `copr.htm`, as downloaded on 2026-10-14.
+Verbatim text of each eBible.org archive's `copr.htm`, as downloaded on 2026-10-14 (RV1909 on
+2026-10-19).
 
 
 ## KJV — `eng-kjv2006`
@@ -108,4 +109,19 @@ Verbatim text of each eBible.org archive's `copr.htm`, as downloaded on 2026-10-
 > Translation by: Noah Webster  
 > 2024-08-01  
 > HTML generated with Haiola by eBible.org 13 Oct 2026 from source files dated 12 Dec 2025  
+> Public Domain  
+
+## RV1909 — `spaRV1909`
+
+> Santa Biblia — Reina Valera 1909  
+> Santa Biblia — Reina Valera 1909  
+> Santa Biblia — Reina Valera 1909  
+> The Holy Bible in Spanish, Reina Valera translation of 1909  
+> Public Domain  
+> Language: Español (Spanish)  
+> Dialect: Castellano 1909  
+> Translation by: Reina y Valera  
+> Dominio Público  
+> 2013-12-13  
+> HTML generated with Haiola by eBible.org 18 Oct 2026 from source files dated 10 Aug 2015  
 > Public Domain  

@@ -760,6 +760,14 @@ fn hanging(galley: Arc<Galley>, hang: f32) -> Arc<Galley> {
     Arc::new(g)
 }
 
+/// "PSALM" and "CHAPTER" in the translation's language (English unless it is Spanish).
+fn head_words(t: Option<&Translation>) -> (&'static str, &'static str) {
+    match t.map(|t| t.meta.language.split('-').next().unwrap_or_default()) {
+        Some("es") => ("SALMO", "CAPÍTULO"),
+        _ => ("PSALM", "CHAPTER"),
+    }
+}
+
 /// The heading at the top of a chapter. Chapter 1 shows the book's title, its long name and a
 /// CHAPTER 1 label; later chapters a book-name label over a large numeral; psalms a left-aligned
 /// PSALM n label followed by the psalm's own heading and title.
@@ -771,7 +779,7 @@ fn chapter_head(b: &mut Builder<'_, '_>, t: Option<&Translation>, c: ChapterIdx,
     if cx.typo.quiet_head {
         // Focus mode: the book, chapter and translation in one tertiary line, 16 pt above a
         // 20 pt gap.
-        let book = if c.book() == BookId::PSALMS { "Psalm".to_string() } else { short.clone() };
+        let book = if c.book() == BookId::PSALMS { head_words(t).0.to_string() } else { short.clone() };
         let abbrev = t.map(|t| t.meta.abbrev.clone()).unwrap_or_default();
         let label = format!("{} {} · {abbrev}", book.to_uppercase(), c.chapter());
         b.label_line_in(&label, single_column, p.ink_3);
@@ -782,7 +790,7 @@ fn chapter_head(b: &mut Builder<'_, '_>, t: Option<&Translation>, c: ChapterIdx,
         return;
     }
     if c.book() == BookId::PSALMS && single_column {
-        b.label_line(&format!("PSALM {}", c.chapter()), false);
+        b.label_line(&format!("{} {}", head_words(t).0, c.chapter()), false);
         b.psalm_head = true;
         b.space = cx.s(16.0);
         b.after_heading = true;
@@ -801,7 +809,7 @@ fn chapter_head(b: &mut Builder<'_, '_>, t: Option<&Translation>, c: ChapterIdx,
             b.serif_line(&long, SERIF_ITALIC, size, lh, 0.0, p.ink_2, true);
         }
         b.y += cx.s(16.0);
-        b.label_line(&format!("CHAPTER {}", c.chapter()), true);
+        b.label_line(&format!("{} {}", head_words(t).1, c.chapter()), true);
     } else {
         b.label_line(&short.to_uppercase(), true);
         b.y += cx.s(4.0);
@@ -1000,7 +1008,7 @@ pub fn layout_parallel(
             _ => None,
         });
         let label = if c.book() == BookId::PSALMS {
-            format!("PSALM {}", c.chapter())
+            format!("{} {}", head_words(first_t).0, c.chapter())
         } else {
             let name = first_t
                 .map(|t| t.meta.book_short(c.book()).to_string())

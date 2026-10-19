@@ -7,7 +7,7 @@ change, so the publishers' pages are linked below.
 
 | Translation | How to get it free in bible-rs | Key, limits and terms |
 |---|---|---|
-| KJV, WEB, BSB, ASV, YLT, Darby, Webster | Built in | Public domain. |
+| KJV, WEB, BSB, ASV, YLT, Darby, Webster, Reina-Valera 1909 (Spanish) | Built in | Public domain. |
 | **NLT** (Tyndale) | Settings → Translations → **Add NLT** | No key needed: 50 verses a request, 500 requests a day. An optional free key from [api.nlt.to](https://api.nlt.to/) raises that to 500 verses and 5,000 requests. Non-commercial use only, and consistent with [Tyndale's purpose](https://www.tyndale.com/purpose). At most 500 verses are kept on disk, and never a whole book. Tyndale's credit line appears under each chapter. |
 | **NET Bible** (bible.org) | Settings → Translations → **Add NET** | No key needed ([labs.bible.org](https://labs.bible.org/api/)). Non-commercial use may quote the text in any form. "(NET)" and the acknowledgment appear under each chapter, linked to netbible.org. Requests are spaced 1 s apart, and chapters are kept for 30 days. |
 | **ESV** (Crossway) | Settings → Translations → **Get Free Key…** opens [api.esv.org](https://api.esv.org/account/create-application/). Create an "API application" there, paste the key, then **Add ESV** | Non-commercial use only. 5,000 requests a day, 1,000 an hour, 60 a minute. At most 500 verses are stored, and never more than half a book. The notice under each chapter links to esv.org. |

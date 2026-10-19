@@ -301,7 +301,7 @@ pub fn normalize_into(text: &str, out: &mut Vec<u8>) {
     }
 }
 
-fn fold_char(c: char, out: &mut String) {
+pub(crate) fn fold_char(c: char, out: &mut String) {
     if c.is_ascii() {
         out.push(c.to_ascii_lowercase());
         return;

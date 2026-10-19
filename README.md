@@ -11,7 +11,8 @@ typeset, searchable as you type, with highlights, notes and bookmarks kept on yo
 - **Typeset for reading.** Literata serif, a comfortable measure, superscript verse numbers,
   chapter and section headings, poetry with hanging indents, LORD in small capitals, optional red
   letters, paragraphs or verse-per-line, adjustable size, light / sepia / dark.
-- **Seven public-domain translations built in** (KJV, WEB, BSB, ASV, YLT, Darby, Webster), side by
+- **Eight public-domain translations built in** (KJV, WEB, BSB, ASV, YLT, Darby, Webster and the
+  Spanish Reina-Valera 1909), side by
   side in parallel columns or one verse across all of them. Add the NLT and the NET Bible free in
   one click, the ESV with a free key, others with an API.Bible key or a file you own
   ([which translations, and how](TRANSLATIONS.md)).
@@ -91,8 +92,9 @@ typeset, searchable as you type, with highlights, notes and bookmarks kept on yo
 | YLT | Young's Literal Translation (1898) | |
 | DBY | Darby Translation (1890) | |
 | WBS | Webster Bible (1833) | |
+| RV1909 | Reina-Valera 1909 | Spanish. ⌘K also takes Spanish book names (`Juan 3:16`, `1 Corintios 13`). |
 
-All seven come from eBible.org's USFM editions; download URLs and SHA-256 digests are pinned in
+All eight come from eBible.org's USFM editions; download URLs and SHA-256 digests are pinned in
 [`xtask/src/main.rs`](xtask/src/main.rs) and the data is rebuilt with `cargo run -p xtask --
 build-data`. Provenance, licence statements and what was deliberately left out are in
 [`LICENSES/`](LICENSES/README.md).

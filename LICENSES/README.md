@@ -19,6 +19,7 @@ Strong's numbers and introductions are dropped; the verse text itself is unchang
 | `ylt` | Young's Literal Translation (1898) | `engylt` | Public domain | Robert Young; published 1862/1898. |
 | `dby` | Darby Translation (1890) | `engDBY` | Public domain | J. N. Darby; published 1867/1890. |
 | `wbs` | Webster Bible (1833) | `engwebster` | Public domain | Noah Webster's revision of the KJV. |
+| `rv1909` | Reina-Valera 1909 (Spanish) | `spaRV1909` | Public domain | Casiodoro de Reina (1569), revised by Cipriano de Valera (1602); the 1909 revision's copyright has expired. Spanish versification moves 18 KJV verses (e.g. Jonah 1:17 is Jonah 2:1), so those verses are empty in parallel and compare views. |
 
 eBible.org's catalogue (`translations.csv`) and each archive's `copr.htm` state "Public Domain" for
 every source above; copies of those statements are reproduced in [`bibles.md`](bibles.md).

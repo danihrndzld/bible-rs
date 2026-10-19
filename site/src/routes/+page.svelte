@@ -100,7 +100,7 @@
 		<div class="f">
 			<h3>Many translations</h3>
 			<p>
-				KJV, WEB, BSB, ASV, YLT, Darby and Webster built in, side by side. Add the NLT and NET free
+				KJV, WEB, BSB, ASV, YLT, Darby, Webster and the Spanish Reina-Valera 1909 built in, side by side. Add the NLT and NET free
 				in one click.
 			</p>
 		</div>
