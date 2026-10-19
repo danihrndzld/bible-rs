@@ -243,6 +243,12 @@ fn nlt_works_without_a_key_in_ranges_the_terms_allow() {
         let Some(r) = query(path, "ref").filter(|_| path.starts_with("/api/passages")) else {
             return (404, String::new());
         };
+        // Keys the API turns away: one whose day is used up, one that was revoked.
+        match query(path, "key") {
+            Some("Spent") => return (429, String::new()),
+            Some("Revoked") => return (403, String::new()),
+            _ => {}
+        }
         let verses = if r.starts_with("Ps.119.") {
             176
         } else if r.starts_with("3Jn.1.") {
@@ -314,6 +320,54 @@ fn nlt_works_without_a_key_in_ranges_the_terms_allow() {
     assert_eq!(query(&log.lock().unwrap().last().unwrap().path, "key"), Some("K%201"));
     lib.set_api_key("nlt-api-key", "").unwrap();
 
+    // A built-in key the API turns away (its shared day used up, or revoked): the chapter loads
+    // anonymously in 50-verse ranges, and the next goes there directly. Each request counts once
+    // toward the install's 500.
+    let requests =
+        || std::fs::read_to_string(&budget).unwrap().split(' ').nth(1).unwrap().parse::<u32>().unwrap();
+    let sent = |name: &str| -> Vec<String> {
+        log.lock().unwrap().iter().map(|r| query(&r.path, name).unwrap().to_string()).collect()
+    };
+    for builtin in ["Spent", "Revoked"] {
+        log.lock().unwrap().clear();
+        let before = requests();
+        let (notify, rx) = notifier();
+        let refused_dir = temp_dir(&format!("nlt-refused-{builtin}"));
+        let mut lib = Library::open(&refused_dir, notify);
+        lib.add_online_with_source(cfg.clone(), Arc::new(nlt().with_builtin_key(Some(builtin))));
+        let Chapter::Ready(t) = wait_ready(&lib, "nlt", ps119, &rx) else { panic!("{builtin}: not ready") };
+        assert_eq!(t.verses_in(ps119).len(), 176);
+        assert!(matches!(wait_ready(&lib, "nlt", john3, &rx), Chapter::Ready(_)), "{builtin}");
+        assert_eq!(
+            sent("ref"),
+            [
+                "Ps.119.1-500",
+                "Ps.119.1-50",
+                "Ps.119.51-100",
+                "Ps.119.101-150",
+                "Ps.119.151-200",
+                "John.3.1-50"
+            ]
+        );
+        assert_eq!(sent("key"), [builtin, "TEST", "TEST", "TEST", "TEST", "TEST"]);
+        assert_eq!(requests() - before, 6);
+        let _ = std::fs::remove_dir_all(refused_dir);
+    }
+
+    // A reader's own key the API turns away is reported as before, with no retry.
+    log.lock().unwrap().clear();
+    let (notify, rx) = notifier();
+    let own_dir = temp_dir("nlt-own-refused");
+    let mut lib = Library::open(&own_dir, notify);
+    lib.set_api_key("nlt-api-key", "Revoked").unwrap();
+    lib.add_online_with_source(cfg.clone(), Arc::new(nlt().with_builtin_key(Some("B 1"))));
+    match wait_ready(&lib, "nlt", john3, &rx) {
+        Chapter::Failed(m) => assert_eq!(m, "NLT API: the API key was rejected (HTTP 403)"),
+        _ => panic!("expected the rejected key"),
+    }
+    assert_eq!(sent("key"), ["Revoked"]);
+    lib.set_api_key("nlt-api-key", "").unwrap();
+
     // Once the day's requests are used up, no more are made and the reason is shown.
     let today =
         std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() / 86_400;
@@ -346,7 +400,7 @@ fn nlt_works_without_a_key_in_ranges_the_terms_allow() {
         _ => panic!("expected the daily limit"),
     }
     assert!(log.lock().unwrap().is_empty());
-    for d in [dir, key_dir, builtin_dir, spent_dir, shared_dir] {
+    for d in [dir, key_dir, builtin_dir, own_dir, spent_dir, shared_dir] {
         let _ = std::fs::remove_dir_all(d);
     }
 }

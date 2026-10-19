@@ -597,7 +597,23 @@ fn read_count(p: &Path) -> Option<(i64, u32)> {
     Some((day.parse().ok()?, n.parse().ok()?))
 }
 
-/// Reads a response body as text, turning HTTP errors into readable messages.
+/// An HTTP error status and the readable message shown for it.
+#[derive(Debug)]
+pub(crate) struct HttpError {
+    pub status: u16,
+    message: String,
+}
+
+impl std::fmt::Display for HttpError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.message)
+    }
+}
+
+impl std::error::Error for HttpError {}
+
+/// Reads a response body as text, turning HTTP errors into readable messages (an [`HttpError`],
+/// for callers that act on the status).
 pub(crate) fn read_body(
     resp: std::result::Result<ureq::http::Response<ureq::Body>, ureq::Error>,
     what: &str,
@@ -605,13 +621,14 @@ pub(crate) fn read_body(
     let mut resp = resp.with_context(|| format!("{what}: network error"))?;
     let status = resp.status().as_u16();
     let body = resp.body_mut().read_to_string().unwrap_or_default();
-    match status {
-        200..=299 => Ok(body),
-        401 | 403 => anyhow::bail!("{what}: the API key was rejected (HTTP {status})"),
-        404 => anyhow::bail!("{what}: not found (HTTP 404)"),
-        429 => anyhow::bail!("{what}: rate limit reached; try again later (HTTP 429)"),
-        _ => anyhow::bail!("{what}: HTTP {status}: {}", body.chars().take(200).collect::<String>()),
-    }
+    let message = match status {
+        200..=299 => return Ok(body),
+        401 | 403 => format!("{what}: the API key was rejected (HTTP {status})"),
+        404 => format!("{what}: not found (HTTP 404)"),
+        429 => format!("{what}: rate limit reached; try again later (HTTP 429)"),
+        _ => format!("{what}: HTTP {status}: {}", body.chars().take(200).collect::<String>()),
+    };
+    Err(HttpError { status, message }.into())
 }
 
 /// Random anonymous identifier (FUMS device/session ids).

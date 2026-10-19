@@ -16,7 +16,7 @@ use std::time::{Duration, Instant};
 
 use anyhow::Result;
 
-use super::{BookShare, CachePolicy, DailyBudget, FetchedChapter, Source, http_agent, read_body};
+use super::{BookShare, CachePolicy, DailyBudget, FetchedChapter, HttpError, Source, http_agent, read_body};
 use crate::books::{BookId, ChapterIdx};
 use crate::model::{MarkKind, Style, Translation, TranslationBuilder, TranslationMeta};
 use crate::xml::{self, Tok};
@@ -42,6 +42,9 @@ pub struct Nlt {
     budget: DailyBudget,
     /// Used when the reader has no key of their own.
     builtin_key: Option<String>,
+    /// The day (UTC) the API last turned the built-in key away; until the next, requests go
+    /// without it.
+    builtin_refused: Mutex<Option<i64>>,
     /// Every request, including each range of a long chapter, waits this long after the last.
     interval: Duration,
     last_request: Mutex<Option<Instant>>,
@@ -59,6 +62,7 @@ impl Nlt {
             agent: http_agent(),
             budget: DailyBudget::new(budget_path),
             builtin_key: None,
+            builtin_refused: Mutex::new(None),
             interval: Duration::from_secs(1),
             last_request: Mutex::new(None),
         }
@@ -97,32 +101,14 @@ impl Nlt {
         let url = format!("{}/api/passages?ref={reference}&version=NLT&key={key}", self.base);
         read_body(self.agent.get(&url).call(), "NLT API")
     }
-}
 
-impl Source for Nlt {
-    fn policy(&self) -> CachePolicy {
-        CachePolicy {
-            // Tyndale's permission statement: up to 500 verses, and never a complete book.
-            max_verses: 500,
-            book_share: BookShare::LessThanWhole,
-            max_age_secs: 30 * 86_400,
-            // `passage` spaces every request itself (a long chapter takes several).
-            min_request_interval: Duration::ZERO,
-        }
-    }
-
-    fn needs_key(&self) -> bool {
-        false
-    }
-
-    fn fetch(&self, key: &str, c: ChapterIdx) -> Result<FetchedChapter> {
-        // Every copy of a build shares its built-in key's 5,000 requests a day, so that key buys
-        // the larger requests but each install keeps to the anonymous day.
-        let (key, own_key, (per_request, per_day)) = match (key, &self.builtin_key) {
-            ("", Some(builtin)) => (builtin.as_str(), false, (KEY_LIMITS.0, ANONYMOUS_LIMITS.1)),
-            ("", None) => ("", false, ANONYMOUS_LIMITS),
-            (own, _) => (own, true, KEY_LIMITS),
-        };
+    fn chapter(
+        &self,
+        c: ChapterIdx,
+        key: &str,
+        own_key: bool,
+        (per_request, per_day): (u32, u32),
+    ) -> Result<FetchedChapter> {
         let mut b = TranslationBuilder::new(TranslationMeta { id: "nlt".into(), ..Default::default() });
         b.begin_book(c.book());
         b.begin_chapter(c.chapter() as u32);
@@ -145,6 +131,47 @@ impl Source for Nlt {
         anyhow::ensure!(chapter.verse_count() > 0, "NLT API: no text came back for {}", c.display());
         Ok(FetchedChapter { chapter, copyright: Some(COPYRIGHT.into()), fums_token: None })
     }
+}
+
+impl Source for Nlt {
+    fn policy(&self) -> CachePolicy {
+        CachePolicy {
+            // Tyndale's permission statement: up to 500 verses, and never a complete book.
+            max_verses: 500,
+            book_share: BookShare::LessThanWhole,
+            max_age_secs: 30 * 86_400,
+            // `passage` spaces every request itself (a long chapter takes several).
+            min_request_interval: Duration::ZERO,
+        }
+    }
+
+    fn needs_key(&self) -> bool {
+        false
+    }
+
+    fn fetch(&self, key: &str, c: ChapterIdx) -> Result<FetchedChapter> {
+        if !key.is_empty() {
+            return self.chapter(c, key, true, KEY_LIMITS);
+        }
+        if let Some(builtin) = &self.builtin_key
+            && *self.builtin_refused.lock().unwrap() != Some(DailyBudget::today())
+        {
+            // Every copy of a build shares its built-in key's 5,000 requests a day, so that key
+            // buys the larger requests but each install keeps to the anonymous day. When the
+            // shared day runs out (429) or the key is revoked (401, 403), anonymous access is
+            // still open.
+            match self.chapter(c, builtin, false, (KEY_LIMITS.0, ANONYMOUS_LIMITS.1)) {
+                Err(e) if refused(&e) => *self.builtin_refused.lock().unwrap() = Some(DailyBudget::today()),
+                fetched => return fetched,
+            }
+        }
+        self.chapter(c, "", false, ANONYMOUS_LIMITS)
+    }
+}
+
+/// Did the API turn the key away, rejecting it or with its day used up?
+fn refused(e: &anyhow::Error) -> bool {
+    e.downcast_ref::<HttpError>().is_some_and(|e| matches!(e.status, 401 | 403 | 429))
 }
 
 /// The API's name for a book: OSIS, except five it spells its own way (checked against its

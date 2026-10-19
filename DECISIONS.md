@@ -101,6 +101,11 @@ The pluggable provider interface (`Library` → bundled / imported / online entr
      builds are compiled with bible-rs's own key (`BIBLE_RS_NLT_KEY`, never in the repository).
      Every copy shares its 5,000 requests a day, so it lifts the verses per request to 500 but
      each install keeps to the anonymous 500 requests; a reader's own key gets the full 5,000.
+     Other installs can still use up the shared day, and a key can be revoked, so when the API
+     refuses the built-in key (HTTP 401, 403 or 429) the chapter is fetched anonymously in
+     50-verse ranges instead, and the session doesn't try the key again until the next day (UTC).
+     Both kinds of request count toward the same 500. A reader's own key is never swapped out: its
+     errors are shown.
      The ESV key can't be built in the same way: Crossway's terms forbid publishing it, and any
      key inside a downloadable app is readable.
    - NET: no storage limit in its terms; requests spaced ≥ 1 s, chapters refreshed after 30 days.
