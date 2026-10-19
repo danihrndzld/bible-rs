@@ -1,7 +1,7 @@
 //! The set of installed translations, whatever their origin, behind one interface.
 //!
 //! * **Bundled** — public-domain `.bbl` blobs compiled into the binary.
-//! * **Imported** — `.bbl` files the user converted from their own OSIS/USFM/Zefania/SWORD
+//! * **Imported** — `.bbl` files the user converted from their own OSIS/USFM/Zefania/JSON/SWORD
 //!   files, stored in `<data dir>/translations/`.
 //! * **Online** — fetched chapter by chapter from the ESV API or API.Bible with the user's key,
 //!   or from the NLT API or the NET Bible API (no key needed).

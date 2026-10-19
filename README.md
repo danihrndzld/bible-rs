@@ -115,6 +115,7 @@ Supported formats:
 | **USFM** | a `.usfm`/`.sfm` file, a folder of them, or a `.zip` |
 | **OSIS XML** | the `.xml`/`.osis` file |
 | **Zefania XML** | the `.xml` file |
+| **JSON** | a YouVersion-style snapshot `.json` (`books[].chapters[].html`), such as the files in [mrk214/bible-data-es-spa](https://github.com/mrk214/bible-data-es-spa). Only import versions you have the right to use. |
 | **SWORD module** | the module `.zip`, its unpacked folder, or its `mods.d/*.conf` file. zText/RawText drivers in KJV, KJVA, NRSV or NRSVA versification; OSIS, ThML and GBF markup. **Locked modules** (e.g. purchased from a publisher) work with your unlock key: enter it in the *SWORD unlock key* field (or `--key`). |
 
 The text is converted to bible-rs's format and stored only in your data folder

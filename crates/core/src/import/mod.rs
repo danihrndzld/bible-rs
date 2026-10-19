@@ -1,7 +1,8 @@
-//! Importing user-supplied translations: USFM (file, folder or zip), OSIS XML, Zefania XML and
-//! SWORD modules (folder, `.conf` file or zip). Imported text is converted to the common model
+//! Importing user-supplied translations: USFM (file, folder or zip), OSIS XML, Zefania XML,
+//! YouVersion-style JSON snapshots and SWORD modules (folder, `.conf` file or zip). Imported text is converted to the common model
 //! and saved as a `.bbl` file in the user's data directory — never anywhere in this repository.
 
+pub mod json;
 pub mod osis;
 pub mod sword;
 pub mod zefania;
@@ -22,6 +23,7 @@ pub enum Format {
     Usfm,
     Osis,
     Zefania,
+    Json,
     Sword,
 }
 
@@ -31,6 +33,7 @@ impl Format {
             Format::Usfm => "USFM",
             Format::Osis => "OSIS XML",
             Format::Zefania => "Zefania XML",
+            Format::Json => "JSON",
             Format::Sword => "SWORD module",
         }
     }
@@ -142,6 +145,14 @@ pub fn peek(path: &Path) -> Result<Peek> {
                 }
             }
         }
+        Format::Json => {
+            if let Some(bytes) = src.files.values().find(|b| json::sniff(&head(b)))
+                && let Ok(doc) = json::Doc::parse(&text_of(bytes))
+            {
+                abbrev = doc.local_abbreviation;
+                name = doc.local_title;
+            }
+        }
         Format::Usfm => {}
     }
     if abbrev.is_empty() {
@@ -225,6 +236,11 @@ fn is_zip(path: &Path) -> Result<bool> {
     Ok(f.read(&mut magic)? == 4 && magic == *b"PK\x03\x04")
 }
 
+/// The first 4 KB of a file, for sniffing its format.
+fn head(bytes: &[u8]) -> std::borrow::Cow<'_, str> {
+    String::from_utf8_lossy(&bytes[..bytes.len().min(4096)])
+}
+
 fn text_of(bytes: &[u8]) -> String {
     let bytes = bytes.strip_prefix(b"\xef\xbb\xbf").unwrap_or(bytes);
     match std::str::from_utf8(bytes) {
@@ -253,9 +269,12 @@ fn detect(src: &Source) -> Result<Format> {
         if head.trim_start_matches('\u{feff}').trim_start().starts_with("\\id ") {
             return Ok(Format::Usfm);
         }
+        if json::sniff(&head) {
+            return Ok(Format::Json);
+        }
         let _ = name;
     }
-    bail!("unrecognized format: expected USFM, OSIS XML, Zefania XML or a SWORD module")
+    bail!("unrecognized format: expected USFM, OSIS XML, Zefania XML, a JSON Bible or a SWORD module")
 }
 
 pub fn slug(s: &str) -> String {
@@ -287,6 +306,7 @@ pub fn import_with_progress(path: &Path, opts: &ImportOptions, progress: &Arc<Pr
     let mut detected_name = String::new();
     let mut detected_abbrev = String::new();
     let mut rights = String::new();
+    let mut language = None;
     match format {
         Format::Usfm => {
             let mut names: Vec<&String> = src
@@ -328,6 +348,16 @@ pub fn import_with_progress(path: &Path, opts: &ImportOptions, progress: &Arc<Pr
                 rights = info.rights;
             }
         }
+        Format::Json => {
+            let (_, bytes) =
+                src.files.iter().find(|(_, b)| json::sniff(&head(b))).context("no JSON Bible found")?;
+            let doc = json::Doc::parse(&text_of(bytes))?;
+            json::read(&mut b, &doc)?;
+            detected_name = doc.local_title.clone();
+            detected_abbrev = doc.local_abbreviation.clone();
+            rights = doc.copyright.map(|c| c.text).unwrap_or_default();
+            language = doc.language.map(|l| l.iso_639_1).filter(|l| !l.is_empty());
+        }
         Format::Sword => {
             let (conf_name, conf_bytes) =
                 src.files.iter().find(|(k, _)| k.starts_with("mods.d/") && k.ends_with(".conf")).unwrap();
@@ -367,6 +397,7 @@ pub fn import_with_progress(path: &Path, opts: &ImportOptions, progress: &Arc<Pr
         copyright: rights,
         source: format!("{} ({})", src.label, format.name()),
         origin: Origin::Imported { format: format.name().into(), file_name: src.label.clone() },
+        language: language.unwrap_or_else(|| t.meta.language.clone()),
         ..t.meta.clone()
     };
     t.meta = meta;
@@ -453,6 +484,12 @@ mod tests {
         let imp =
             import_path(&zef, &ImportOptions { name: Some("Zef".into()), ..Default::default() }).unwrap();
         assert_eq!((imp.format, imp.translation.meta.name.as_str()), (Format::Zefania, "Zef"));
+        let js = d.join("b.json");
+        std::fs::write(&js, r#"{"local_abbreviation":"JS","local_title":"Json Bible","language":{"iso_639_1":"es"},"books":[{"usfm":"GEN","human":"Genesis","chapters":[{"usfm":"GEN.1","html":"<div class=\"p\"><span class=\"verse v1\"><span class=\"label\">1</span><span class=\"content\">In the beginning</span></span></div>"}]}]}"#).unwrap();
+        assert_eq!(peek(&js).unwrap().abbrev, "JS");
+        let imp = import_path(&js, &ImportOptions::default()).unwrap();
+        assert_eq!((imp.format, imp.translation.meta.name.as_str()), (Format::Json, "Json Bible"));
+        assert_eq!((imp.translation.meta.id.as_str(), imp.translation.meta.language.as_str()), ("js", "es"));
         let bad = d.join("bad.txt");
         std::fs::write(&bad, "hello").unwrap();
         assert!(import_path(&bad, &ImportOptions::default()).is_err());

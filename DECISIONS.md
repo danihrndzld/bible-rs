@@ -85,7 +85,7 @@ repository: no text, no derived index, no test fixtures (tests use public-domain
 The pluggable provider interface (`Library` → bundled / imported / online entries, all answering
 `chapter(id, chapter)` without blocking) gives users two routes to licensed texts:
 
-1. **Import a file they own** — USFM (file/folder/zip), OSIS XML, Zefania XML, or a **SWORD
+1. **Import a file they own** — USFM (file/folder/zip), OSIS XML, Zefania XML, YouVersion-style JSON, or a **SWORD
    module** (zText/RawText, KJV/KJVA/NRSV/NRSVA versification, OSIS/ThML/GBF markup, and Sapphire-II-locked
    modules with the user's unlock key — the cipher is verified against SWORD's own C++
    implementation). The converted `.bbl` lives only in the user's data folder.

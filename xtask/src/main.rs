@@ -173,6 +173,9 @@ fn main() -> Result<()> {
                 started.elapsed(),
                 imp.warnings.len()
             );
+            for w in imp.warnings.iter().take(5) {
+                println!("      {w}");
+            }
             if let Some(base) = args.get(2) {
                 let b = format::decode(&std::fs::read(root.join(format!("data/translations/{base}.bbl")))?)?;
                 let (mut same, mut diff, mut missing) = (0, 0, 0);

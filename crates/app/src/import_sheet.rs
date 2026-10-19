@@ -22,7 +22,7 @@ const PAD: f32 = 24.0;
 const TITLE_BAR: f32 = 52.0;
 const FOOTER: f32 = 64.0;
 
-const FORMATS: &str = "USFM (.usfm, .sfm, folder, .zip) · OSIS XML · Zefania XML · SWORD module";
+const FORMATS: &str = "USFM (.usfm, .sfm, folder, .zip) · OSIS XML · Zefania XML · JSON · SWORD module";
 
 /// What the sheet asks of the app when it closes.
 pub enum Outcome {
@@ -306,8 +306,8 @@ impl ImportSheet {
         let r = Rect::from_min_size(pos2(cx - w / 2.0, y), vec2(w, 24.0));
         if b.show(ui, p, r, ui.id().with("choose")).clicked()
             && let Some(path) = rfd::FileDialog::new()
-                .set_title("Import a translation (USFM, OSIS, Zefania, SWORD)")
-                .add_filter("Bible files", &["xml", "osis", "usfm", "sfm", "zip", "conf", "txt"])
+                .set_title("Import a translation (USFM, OSIS, Zefania, JSON, SWORD)")
+                .add_filter("Bible files", &["xml", "osis", "usfm", "sfm", "zip", "conf", "txt", "json"])
                 .pick_file()
         {
             self.choose(path);

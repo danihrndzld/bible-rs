@@ -904,7 +904,7 @@ impl SettingsUi {
         // Import.
         group_title(ui, p, "Import");
         rows_card(ui, p, &[56.0], |ui, _, r| {
-            row_label(ui, p, r, "Add a translation you own", Some("USFM, OSIS, Zefania or SWORD · ⌘I"));
+            row_label(ui, p, r, "Add a translation you own", Some("USFM, OSIS, Zefania, JSON or SWORD · ⌘I"));
             let (folder, resp) = Button::new(Kind::Secondary, "Import Folder…")
                 .icon(icons::folder)
                 .show_right(ui, p, r.right() - 16.0, r.center().y, ui.id().with("import-folder"));
@@ -924,8 +924,8 @@ impl SettingsUi {
             );
             if resp.clicked()
                 && let Some(path) = rfd::FileDialog::new()
-                    .set_title("Import a translation (USFM, OSIS, Zefania, SWORD)")
-                    .add_filter("Bible files", &["xml", "osis", "usfm", "sfm", "zip", "conf", "txt"])
+                    .set_title("Import a translation (USFM, OSIS, Zefania, JSON, SWORD)")
+                    .add_filter("Bible files", &["xml", "osis", "usfm", "sfm", "zip", "conf", "txt", "json"])
                     .pick_file()
             {
                 *import = Some((path, None));
